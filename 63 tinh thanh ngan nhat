@@ -1,0 +1,130 @@
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <string>
+#include <limits>
+
+using namespace std;
+
+const int INF = 1e9;  // Gia tri lon bieu dien khoang cach vo cung
+
+// Cau truc luu thong tin canh
+struct Edge {
+    int to;
+    int weight;
+    string vehicle;  // Phuong tien di chuyen
+};
+
+// Ham tim duong di ngan nhat bang thuat toan Dijkstra
+void dijkstra(int start, int V, vector<vector<Edge>>& graph, vector<int>& dist, vector<int>& previous) {
+    dist.assign(V, INF);   // Gan tat ca khoang cach ban dau la vo cung
+    dist[start] = 0;       // Khoang cach den dinh bat dau la 0
+    vector<bool> visited(V, false);  // Danh dau cac dinh chua duoc xet
+
+    for (int i = 0; i < V - 1; i++) {
+        // Tim dinh chua duoc xet co khoang cach ngan nhat
+        int minDist = INF;
+        int currentNode = -1;
+        for (int j = 0; j < V; j++) {
+            if (!visited[j] && dist[j] < minDist) {
+                minDist = dist[j];
+                currentNode = j;
+            }
+        }
+
+        if (currentNode == -1) break;  // Khong con dinh nao de xet
+
+        // Danh dau dinh hien tai da duoc xet
+        visited[currentNode] = true;
+
+        // Cap nhat khoang cach den cac dinh ke
+        for (const Edge& edge : graph[currentNode]) {
+            int nextNode = edge.to;
+            int weight = edge.weight;
+
+            if (!visited[nextNode] && dist[currentNode] + weight < dist[nextNode]) {
+                dist[nextNode] = dist[currentNode] + weight;
+                previous[nextNode] = currentNode;  // Luu lai dinh truoc do
+            }
+        }
+    }
+}
+
+// Ham in ra duong di tu dinh bat dau den dinh dich
+void printPath(int destination, const vector<int>& previous, const unordered_map<int, string>& indexToCity) {
+    if (previous[destination] == -1) {
+        cout << "Khong co duong di toi tinh dich!" << endl;
+        return;
+    }
+
+    vector<int> path;
+    for (int at = destination; at != -1; at = previous[at]) {
+        path.push_back(at);
+    }
+
+    // In duong di
+    for (int i = path.size() - 1; i >= 0; i--) {
+        cout << indexToCity.at(path[i]);
+        if (i != 0) cout << " -> ";
+    }
+    cout << endl;
+}
+
+int main() {
+    int V = 63;  // So luong tinh thanh pho
+    unordered_map<string, int> cityToIndex;  // Map tu ten tinh thanh den chi so
+    unordered_map<int, string> indexToCity;  // Map tu chi so den ten tinh thanh
+
+    // Them du lieu tinh thanh vao map (vi du, ban co the them day du 63 tinh thanh)
+    cityToIndex["Ho Chi Minh"] = 0;
+    indexToCity[0] = "Ho Chi Minh";
+    cityToIndex["Ha Noi"] = 1;
+    indexToCity[1] = "Ha Noi";
+    // Ban co the tiep tuc them cac tinh khac vao day
+
+    vector<vector<Edge>> graph(V);  // Do thi danh sach ke
+
+    // Nhap thong tin ve cac canh
+    int numEdges;
+    cout << "Nhap so luong canh: ";
+    cin >> numEdges;
+
+    for (int i = 0; i < numEdges; i++) {
+        string city1, city2, vehicle;
+        int distance;
+        cout << "Nhap thong tin (city1 city2 distance vehicle): ";
+        cin >> city1 >> city2 >> distance >> vehicle;
+
+        int from = cityToIndex[city1];
+        int to = cityToIndex[city2];
+
+        // Them canh vao do thi
+        graph[from].push_back({to, distance, vehicle});
+        graph[to].push_back({from, distance, vehicle});  // Do thi vo huong
+    }
+
+    // Nhap diem bat dau va diem dich
+    string startCity, endCity;
+    cout << "Nhap tinh bat dau: ";
+    cin >> startCity;
+    cout << "Nhap tinh dich: ";
+    cin >> endCity;
+
+    int start = cityToIndex[startCity];
+    int destination = cityToIndex[endCity];
+
+    // Chay thuat toan Dijkstra
+    vector<int> distances(V), previous(V, -1);
+    dijkstra(start, V, graph, distances, previous);
+
+    // In ra ket qua
+    if (distances[destination] == INF) {
+        cout << "Khong co duong di tu " << startCity << " den " << endCity << endl;
+    } else {
+        cout << "Khoang cach ngan nhat tu " << startCity << " den " << endCity << " la: " << distances[destination] << " km" << endl;
+        cout << "Duong di: ";
+        printPath(destination, previous, indexToCity);
+    }
+
+    return 0;
+}
